@@ -1,8 +1,12 @@
 package mcech.sql;
 
+import static java.sql.Statement.RETURN_GENERATED_KEYS;
+
 import java.io.Closeable;
+import java.sql.Connection;
 import java.sql.DriverManager;
 import java.sql.PreparedStatement;
+import java.sql.ResultSet;
 import java.sql.SQLException;
 
 /**
@@ -10,7 +14,7 @@ import java.sql.SQLException;
  * SQL statements  are executed and results are returned within the context of a
  * connection.
  */
-public class Connection implements Closeable {
+public class Database implements Closeable {
 	/**
 	 * Attempts to establish a connection to the given database URL.
 	 *
@@ -22,9 +26,9 @@ public class Connection implements Closeable {
 	 *
 	 * @throws SQLException  If a database access error occurs
 	 */
-	public Connection(String url, String user, String passwd) throws SQLException {
-		con = DriverManager.getConnection(url, user, passwd);
-		con.setAutoCommit(true);
+	public Database(String url, String user, String passwd) throws SQLException {
+		con_ = DriverManager.getConnection(url, user, passwd);
+		con_.setAutoCommit(true);
 	}
 
 	/**
@@ -33,7 +37,7 @@ public class Connection implements Closeable {
 	 * @throws SQLException  If a database access error occurs
 	 */
 	public void begin() throws SQLException {
-		con.setAutoCommit(false);
+		con_.setAutoCommit(false);
 	}
 
 	/**
@@ -72,14 +76,29 @@ public class Connection implements Closeable {
 	 * @throws SQLException  If a database access error occurs
 	 */
 	public int executeUpdate(String sql, Object... params) throws SQLException {
-		PreparedStatement stmt = prepare(sql, params);
-		try {
-			return stmt.executeUpdate();
+		try (PreparedStatement stmt = prepare(sql, params)) {
+			int rows = stmt.executeUpdate();
+			if (rows > 0) {
+				try (ResultSet rs = stmt.getGeneratedKeys()) {
+					if (rs.next()) {
+						lastInsertedID_ = rs.getLong(1);
+					}
+				}
+			}
+			return rows;
 		}
-		catch (SQLException e) {
-			try {stmt.close();} catch (SQLException ignore) {}
-			throw e;
-		}
+	}
+
+	/**
+	 * Returns the ID of the last inserted row or sequence value.
+	 *
+	 * @return Returns the ID of  the last inserted row,  or the last value from
+	 *         a sequence object, depending on the underlying driver.
+	 *
+	 * @throws SQLException  If a database access error occurs
+	 */
+	public long lastInsertID() throws SQLException {
+		return lastInsertedID_;
 	}
 
 	/**
@@ -88,8 +107,8 @@ public class Connection implements Closeable {
 	 * @throws SQLException  If a database access error occurs
 	 */
 	public void commit() throws SQLException {
-		con.commit();
-		con.setAutoCommit(true);
+		con_.commit();
+		con_.setAutoCommit(true);
 	}
 
 	/**
@@ -98,8 +117,8 @@ public class Connection implements Closeable {
 	 * @throws SQLException  If a database access error occurs
 	 */
 	public void rollback() throws SQLException {
-		con.rollback();
-		con.setAutoCommit(true);
+		con_.rollback();
+		con_.setAutoCommit(true);
 	}
 
 	/**
@@ -110,11 +129,11 @@ public class Connection implements Closeable {
 	 */
 	@Override
 	public void close() {
-		try {con.close();} catch (SQLException ignore) {}
+		try {con_.close();} catch (SQLException ignore) {}
 	}
 
 	private PreparedStatement prepare(String sql, Object[] params) throws SQLException {
-		PreparedStatement stmt = con.prepareStatement(sql);
+		PreparedStatement stmt = con_.prepareStatement(sql, RETURN_GENERATED_KEYS);
 		try {
 			for (int i = 0; i < params.length; ++i) {
 				stmt.setObject(i + 1, params[i]);
@@ -127,5 +146,6 @@ public class Connection implements Closeable {
 		}
 	}
 
-	private java.sql.Connection con;
+	private Connection con_;
+	private long lastInsertedID_;
 }

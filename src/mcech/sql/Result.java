@@ -25,7 +25,7 @@ public class Result implements Closeable {
 	 * @throws SQLException  If a database access error occurs
 	 */
 	public String[] getColumnNames() throws SQLException {
-		ResultSetMetaData md = rs.getMetaData();
+		ResultSetMetaData md = rs_.getMetaData();
 		int count = md.getColumnCount();
 		String[] result = new String[count];
 		for (int i = 0; i < count; ++i) {
@@ -46,7 +46,7 @@ public class Result implements Closeable {
 	 * @throws SQLException  If a database access error occurs
 	 */
 	public boolean next() throws SQLException {
-		return rs.next();
+		return rs_.next();
 	}
 
 	/**
@@ -60,8 +60,8 @@ public class Result implements Closeable {
 	 * @throws SQLException  If a database access error occurs
 	 */
 	public Long getInt(int column) throws SQLException {
-		long val = rs.getLong(column + 1);
-		if (rs.wasNull()) {
+		long val = rs_.getLong(column + 1);
+		if (rs_.wasNull()) {
 			return null;
 		}
 		return val;
@@ -80,8 +80,8 @@ public class Result implements Closeable {
 	 * @throws SQLException  If a database access error occurs
 	 */
 	public Long getInt(String column) throws SQLException {
-		long val = rs.getLong(column);
-		if (rs.wasNull()) {
+		long val = rs_.getLong(column);
+		if (rs_.wasNull()) {
 			return null;
 		}
 		return val;
@@ -98,8 +98,8 @@ public class Result implements Closeable {
 	 * @throws SQLException  If a database access error occurs
 	 */
 	public Double getFloat(int column) throws SQLException {
-		double val = rs.getDouble(column + 1);
-		if (rs.wasNull()) {
+		double val = rs_.getDouble(column + 1);
+		if (rs_.wasNull()) {
 			return null;
 		}
 		return val;
@@ -118,8 +118,8 @@ public class Result implements Closeable {
 	 * @throws SQLException  If a database access error occurs
 	 */
 	public Double getFloat(String column) throws SQLException {
-		double val = rs.getDouble(column);
-		if (rs.wasNull()) {
+		double val = rs_.getDouble(column);
+		if (rs_.wasNull()) {
 			return null;
 		}
 		return val;
@@ -136,7 +136,7 @@ public class Result implements Closeable {
 	 * @throws SQLException  If a database access error occurs
 	 */
 	public String getString(int column) throws SQLException {
-		return rs.getString(column + 1);
+		return rs_.getString(column + 1);
 	}
 
 	/**
@@ -152,7 +152,7 @@ public class Result implements Closeable {
 	 * @throws SQLException  If a database access error occurs
 	 */
 	public String getString(String column) throws SQLException {
-		return rs.getString(column);
+		return rs_.getString(column);
 	}
 
 	/**
@@ -160,8 +160,8 @@ public class Result implements Closeable {
 	 */
 	@Override
 	public void close() {
-		try {rs.close();} catch (SQLException ignore) {}
-		try {stmt.close();} catch (SQLException ignore) {}
+		try {rs_.close();} catch (SQLException ignore) {}
+		try {stmt_.close();} catch (SQLException ignore) {}
 	}
 
 	/**
@@ -172,10 +172,10 @@ public class Result implements Closeable {
 	 * @throws SQLException  If a database access error occurs
 	 */
 	Result(PreparedStatement stmt) throws SQLException {
-		this.stmt = stmt;
-		rs = stmt.executeQuery();
+		this.stmt_ = stmt;
+		rs_ = stmt.executeQuery();
 	}
 
-	private PreparedStatement stmt;
-	private ResultSet rs;
+	private PreparedStatement stmt_;
+	private ResultSet rs_;
 }
